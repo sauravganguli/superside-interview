@@ -1,34 +1,51 @@
 import requests
 import pandas as pd
 import sys
+import time
+import logging
 
-def fetch_data_from_api(url, headers, params):
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def fetch_data_from_api(url, headers, params, max_retries=3):
     """
-    Fetch data from the Crunchbase API.
+    Fetch data from the Crunchbase API with retry mechanism.
 
     Args:
     - url (str): The API endpoint URL.
     - headers (dict): The headers to be sent with the request.
     - params (dict): The query parameters for the API request.
+    - max_retries (int): Maximum number of retries in case of failure.
 
     Returns:
     - dict: Parsed JSON response from the API.
     - None: If there's an error in fetching the data.
     """
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        if response.status_code == 200:
-            # Success, return the data
-            print("API call successful!")
-            data = response.json()
-            return(data)
-        else:
-            # Error handling
-            print(f"Error: {response.status_code} - {response.text}")
-            return None
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
+    attempts = 0
+    while attempts < max_retries:
+        try:
+            response = requests.get(url, headers=headers, params=params)
+            response.raise_for_status()  # Raises HTTPError for bad responses
+            logging.info("API call successful!")
+            return response.json()
+        except requests.exceptions.HTTPError as http_err:
+            logging.error(f"HTTP error occurred: {http_err}")
+        except requests.exceptions.ConnectionError as conn_err:
+            logging.error(f"Connection error occurred: {conn_err}")
+        except requests.exceptions.Timeout as timeout_err:
+            logging.error(f"Timeout error occurred: {timeout_err}")
+        except requests.exceptions.RequestException as req_err:
+            logging.error(f"Request error occurred: {req_err}")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {e}")
+        
+        attempts += 1
+        if attempts < max_retries:
+            logging.info(f"Retrying... ({attempts}/{max_retries})")
+            time.sleep(2 ** attempts)  # Exponential backoff
+
+    logging.error("Max retries reached. Failed to fetch data from the API.")
+    return None
 
 
 def extract_fields(data):
@@ -43,7 +60,6 @@ def extract_fields(data):
     - None: If the extraction fails.
     """
     try:
-        # Extract the necessary fields from 'cards' > 'fields'
         fields = data.get('cards', {}).get('fields', {})
         
         permalink = fields.get('identifier', {}).get('permalink')
@@ -70,13 +86,13 @@ def extract_fields(data):
         return extracted_data
     
     except KeyError as key_err:
-        print(f"Key error: {key_err}. The API structure may have changed.")
+        logging.error(f"Key error: {key_err}. The API structure may have changed.")
         return None
     except TypeError as type_err:
-        print(f"Type error: {type_err}. There might be an issue with the data structure.")
+        logging.error(f"Type error: {type_err}. There might be an issue with the data structure.")
         return None
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logging.error(f"An unexpected error occurred during extraction: {e}")
         return None
 
     
@@ -91,9 +107,9 @@ def save_to_parquet(data, filename='company_data.parquet'):
     try:
         df = pd.DataFrame([data])
         df.to_parquet(filename, engine='pyarrow', index=False)
-        print(f"Data has been saved to {filename}")
+        logging.info(f"Data has been saved to {filename}")
     except Exception as e:
-        print(f"An error occurred while saving to Parquet: {e}")
+        logging.error(f"An error occurred while saving to Parquet: {e}")
 
         
 def main():
@@ -102,7 +118,7 @@ def main():
         with open('secrets.txt', 'r') as file:
             api_key = file.read().strip()
     except Exception as e:
-        print(f"An error occurred while reading the secrets file: {e}")
+        logging.error(f"An error occurred while reading the secrets file: {e}")
         sys.exit(1)
         
     # Get the permalink as a user input
@@ -129,9 +145,9 @@ def main():
         if extracted_data:
             save_to_parquet(extracted_data)
         else:
-            print("Data extraction failed. The required fields may not be present in the response.")
+            logging.error("Data extraction failed. The required fields may not be present in the response.")
     else:
-        print("Failed to retrieve data from the API.")
+        logging.error("Failed to retrieve data from the API.")
 
         
 if __name__ == "__main__":
