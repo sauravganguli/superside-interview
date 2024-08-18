@@ -1,8 +1,11 @@
 import requests
 import pandas as pd
+import os
 import sys
 import time
 import logging
+from tabulate import tabulate
+
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -106,6 +109,7 @@ def save_to_parquet(data, filename='company_data.parquet'):
     """
     try:
         df = pd.DataFrame([data])
+        print(tabulate(df, headers='keys', tablefmt='pretty', showindex=False))
         df.to_parquet(filename, engine='pyarrow', index=False)
         logging.info(f"Data has been saved to {filename}")
     except Exception as e:
@@ -113,19 +117,20 @@ def save_to_parquet(data, filename='company_data.parquet'):
 
         
 def main():
-    # Get the API key from a secrets file
+    # Get the API key from a env variable
     try:
-        with open('secrets.txt', 'r') as file:
-            api_key = file.read().strip()
+        # Read API key from environment variable
+        api_key = os.getenv('CRUNCHBASE_API_KEY')
+
+        if not api_key:
+            logging.error("API key not found. Please set the CRUNCHBASE_API_KEY environment variable.")
+            sys.exit(1)
     except Exception as e:
-        logging.error(f"An error occurred while reading the secrets file: {e}")
+        logging.error(f"An error occurred while reading the API key: {e}")
         sys.exit(1)
-        
-    # Get the permalink as a user input
-    permalink = input("Enter the permalink of the company to search: ").strip()
 
     # Construct the URL with the provided permalink
-    url = f"https://api.crunchbase.com/v4/data/entities/organizations/{permalink}"
+    url = f"https://api.crunchbase.com/v4/data/entities/organizations/konsus"
     headers = {
         "accept": "application/json",
         "X-cb-user-key": api_key
