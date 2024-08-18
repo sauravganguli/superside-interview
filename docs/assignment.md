@@ -240,6 +240,14 @@ This conceptual model and implementation plan provide a robust framework for a d
 * **Build Modular Components**: Develop modular Python functions or classes to handle different aspects of the API interaction, such as making requests, parsing responses, and error handling.  
 * **Data Mapping**: Map the JSON response fields from Crunchbase to the system’s data model. This involves creating a schema that aligns with the database or application's structure (not essential in our use case as data is only loaded to a Parquet file).
 
+**Step 4: Testing and Validation**
+* **Unit Testing**: Write unit tests to validate the API integration functions, ensuring they handle different scenarios like successful responses, errors, and edge cases.
+* **Integration Testing**: Test the end-to-end flow of data retrieval, transformation, and loading to ensure the system behaves as expected.
+* **Data Validation**: Validate the data integrity and consistency by comparing the fetched data with the expected results.
+
+**Step 5: Deployment and Monitoring**
+* **Containerization**: Package the API integration code into containers (e.g., Docker) for easy deployment and scalability.
+
 ## 2\. Anticipated Challenges and Solutions
 
 **Challenge 1: API Rate Limits**
@@ -287,3 +295,12 @@ This conceptual model and implementation plan provide a robust framework for a d
 * **Documentation**: Maintain detailed internal documentation on how the API integration works, including the steps for troubleshooting common errors. This documentation should be updated regularly to reflect any changes in the API or the integration process.
 
 This comprehensive approach ensures that the API integration is robust, resilient, and capable of handling both expected and unexpected challenges effectively.
+
+# AI-Powered Tools Used
+**GitHub Copilot** was used to assist in generating code snippets and providing suggestions for the API integration process. Copilot helped in writing boilerplate code, handling error scenarios, and suggesting best practices for Python programming. It significantly accelerated the development process and ensured code consistency and quality.
+
+**ChatGPT** was used to generate the initial draft of the API integration strategy, including the approach, challenges, and solutions. ChatGPT provided a structured outline based on the input provided, which was then refined and expanded upon to create the final document. It helped in organizing the content and ensuring all key aspects were covered. 
+
+It was also used to generate the detailed assignment documentations. It was provided the architecture diagram and key points to be described, and the content was generated based on the inputs.
+
+Further, it was used for debugging when there were certain code issues. It helped in quickly identifying the root cause of the problem and provided suggestions for resolving the issues.
